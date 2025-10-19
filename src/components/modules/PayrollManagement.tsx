@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PayrollRecord } from '../../types';
 import { formatCurrency } from '../../lib/utils';
 import { emailService } from '../../lib/email-service';
+import jsPDF from 'jspdf';
 
 const mockPayrollRecords: PayrollRecord[] = [
   {
@@ -38,7 +39,7 @@ export const PayrollManagement: React.FC = () => {
   const [payrollRecords] = useState<PayrollRecord[]>(mockPayrollRecords);
   const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(2024);
+  const [selectedYear, setSelectedYear] = useState(2025);
 
   const handleViewDetails = (record: PayrollRecord) => {
     setSelectedRecord(record);
@@ -53,35 +54,50 @@ export const PayrollManagement: React.FC = () => {
       record as unknown as Record<string, unknown>
     );
 
-    // Create a proper PDF download with actual content
-    const pdfContent = `
-HR360 Company
-Payslip for ${record.month} ${record.year}
+    // Create a proper PDF using jsPDF
+    const doc = new jsPDF();
 
-Employee: ${user?.firstName} ${user?.lastName}
-Employee ID: ${user?.id}
-Department: ${user?.department}
-Position: ${user?.position}
+    // Add company header
+    doc.setFontSize(20);
+    doc.text('HR360 Company', 105, 20, { align: 'center' });
 
-Salary Breakdown:
-Base Salary: ${formatCurrency(record.baseSalary)}
-Allowances: +${formatCurrency(record.allowances)}
-Deductions: -${formatCurrency(record.deductions)}
-Net Salary: ${formatCurrency(record.netSalary)}
+    doc.setFontSize(16);
+    doc.text(`Payslip for ${record.month} ${record.year}`, 105, 35, { align: 'center' });
 
-Generated on: ${new Date().toLocaleDateString()}
-    `.trim();
+    // Employee details
+    doc.setFontSize(12);
+    let yPosition = 50;
+    doc.text(`Employee: ${user?.firstName} ${user?.lastName}`, 20, yPosition);
+    yPosition += 10;
+    doc.text(`Employee ID: ${user?.id}`, 20, yPosition);
+    yPosition += 10;
+    doc.text(`Department: ${user?.department}`, 20, yPosition);
+    yPosition += 10;
+    doc.text(`Position: ${user?.position}`, 20, yPosition);
+    yPosition += 20;
 
-    // Create blob and download
-    const blob = new Blob([pdfContent], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `payslip-${record.month}-${record.year}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Salary breakdown
+    doc.setFontSize(14);
+    doc.text('Salary Breakdown:', 20, yPosition);
+    yPosition += 15;
+
+    doc.setFontSize(12);
+    doc.text(`Base Salary: ${formatCurrency(record.baseSalary)}`, 20, yPosition);
+    yPosition += 10;
+    doc.text(`Allowances: +${formatCurrency(record.allowances)}`, 20, yPosition);
+    yPosition += 10;
+    doc.text(`Deductions: -${formatCurrency(record.deductions)}`, 20, yPosition);
+    yPosition += 10;
+    doc.setFontSize(14);
+    doc.text(`Net Salary: ${formatCurrency(record.netSalary)}`, 20, yPosition);
+    yPosition += 20;
+
+    // Footer
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, yPosition);
+
+    // Download the PDF
+    doc.save(`payslip-${record.month}-${record.year}.pdf`);
 
     alert(`Payslip for ${record.month} ${record.year} downloaded and email sent!`);
   };
@@ -113,6 +129,7 @@ Generated on: ${new Date().toLocaleDateString()}
           onChange={(e) => setSelectedYear(parseInt(e.target.value))}
           className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
+          <option value={2025}>2025</option>
           <option value={2024}>2024</option>
           <option value={2023}>2023</option>
           <option value={2022}>2022</option>
