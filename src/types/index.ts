@@ -1,4 +1,6 @@
-import type { Id } from "../convex/_generated/dataModel";
+// Fallback local Id type if the generated convex types are not available.
+// Adjust or remove this when the real "../convex/_generated/dataModel" exists.
+export type Id<T extends string = string> = string & { __id?: T };
 
 export type UserRole = 'admin' | 'hr' | 'employee' | 'candidate';
 
